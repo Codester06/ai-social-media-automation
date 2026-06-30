@@ -1,0 +1,501 @@
+{
+  "name": "social-media-automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2,
+              "triggerAtMinute": 23
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        -544
+      ],
+      "id": "6d33026e-46ac-41fd-be95-400828572f4f",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all files from previous node\nconst files = $input.all().map(item => item.json);\n\n// Make sure files exist\nif (files.length === 0) {\n  return [{ json: { error: \"No files found\" } }];\n}\n\n// Sort by createdTime (newest first)\nfiles.sort((a, b) => new Date(b.createdTime) - new Date(a.createdTime));\n\n// Pick the newest file\nconst latest = files[0];\n\n// Return only useful fields\nreturn [\n  {\n    json: {\n      name: latest.name,\n      id: latest.id,\n      createdTime: latest.createdTime,\n      modifiedTime: latest.modifiedTime,\n      link: latest.webViewLink,\n      download: latest.webContentLink,\n      mimeType: latest.mimeType,\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -544
+      ],
+      "id": "07830552-5073-40ca-99a0-c9e4fdda94e5",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1QTKfTMJsBaNJHtErcL0ibAS0esPzNaUa",
+            "mode": "list",
+            "cachedResultName": "testing1",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1QTKfTMJsBaNJHtErcL0ibAS0esPzNaUa"
+          }
+        },
+        "options": {
+          "fields": [
+            "*"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        400,
+        -544
+      ],
+      "id": "6288d68d-908e-4cce-a3a3-5a15957ba106",
+      "name": "Search files and folders",
+      "notesInFlow": false,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Q9n1eUX8716QHZ3e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "move",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "driveId": {
+          "__rl": true,
+          "value": "1X8bDwgyRgo_-iFxMilkJv1RupiOnYK4s",
+          "mode": "id"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        352,
+        -352
+      ],
+      "id": "82c8dc27-acd3-4e42-9c0c-c2861a8c1062",
+      "name": "Move file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Q9n1eUX8716QHZ3e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": "=data"
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        528,
+        -352
+      ],
+      "id": "e7b187c9-4a5e-487d-b1d6-0b091aaa0a23",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Q9n1eUX8716QHZ3e",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.cloudinary.com/v1_1/dz3tfv6v6/video/upload",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "api_key",
+              "value": "769498851525386"
+            },
+            {
+              "name": "timestamp",
+              "value": "=={{ new Date().toISOString() }}"
+            },
+            {
+              "name": "upload_preset",
+              "value": "n8n_upload"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        816,
+        -352
+      ],
+      "id": "f242ebd0-44ce-44c1-a117-f21809d24a38",
+      "name": "upload in cloud"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph-video.facebook.com/v19.0/17841477728848246/media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer EAARPXHUen7YBQMsmH35AMKczP5HXWU8wKuNPZAZAtfcKF9SrRcQRppxs2AOrrUWBEd8yUO0XkFLyfY5lVXLR2we3dr3eKfPI2TXgxoaqBh94ZC8GVA0JreqmVPTLviWarrokyFQeLFGONeKVFh8OlR1AD4WpriwQOsDiAnqSlHtMlHtHTe1pzF79sT43RUH"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "video_url",
+              "value": "={{ $('upload in cloud').item.json.secure_url }}"
+            },
+            {
+              "name": "media_type",
+              "value": "REELS"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $json.content.parts[0].text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1104,
+        -560
+      ],
+      "id": "65627373-eb1a-4428-a125-1fa5635fbca6",
+      "name": "make a request to ig",
+      "alwaysOutputData": false,
+      "executeOnce": false,
+      "retryOnFail": false,
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.0-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.0-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are skilled at writing detailed captions based on a file name. Write a clear, engaging caption that helps viewers understand and appreciate the post without using too many whimsical words or using too many adjectives. Make it relatable and suitable for an Instagram audience, encouraging people to connect with the post and respond in the comments. Do not use emojis. Do not add hashtags. Do not add quotes. Use fewer adjectives. file_name : {{ $('Code in JavaScript').item.json.name }}",
+              "role": "model"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -544
+      ],
+      "id": "30bda4fe-c425-4e43-be7f-b9f8a15bacd4",
+      "name": "caption generation",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "AxxxYPg0n9xcmUT2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "67dc3d3d-e238-4fd3-a17a-d5e3538564da",
+              "leftValue": "={{ $json.status_code }}",
+              "rightValue": "FINISHED",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1136,
+        -384
+      ],
+      "id": "53c78e24-8e62-460d-acd0-4d6678a46bcc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "amount": 40
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1104,
+        -688
+      ],
+      "id": "40d7eef9-10d3-46b2-9600-5ac9580fed19",
+      "name": "Wait 40 sec",
+      "webhookId": "84b2ceae-131d-48fe-a59a-48d6d6c9b743"
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $json.id }}?fields=status_code",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer EAARPXHUen7YBQEYCeZBo6dXh0dAzo91SePYMOVEWsK5aUnXsTqUOzyfAcswRn6HLgLh2BDK3y3X1kLUUJReflEIHF2VGGRNNxL8fgvtlebJOgS4WGv6WxEqozIBRzTJp3LueMRIvlhTG7dtekO7rc7toAHTWnSdAEHF3o9oh2EqeZBcSwRE7WFgdJ9nwEoCg726vSbGXbtFRdyJuOUcXWhnX2ET9t0kiUJ"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1312,
+        -624
+      ],
+      "id": "33b337dc-01f2-4e76-b996-f9ec52b09c1a",
+      "name": "status code"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/17841477728848246/media_publish",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer EAARPXHUen7YBQEYCeZBo6dXh0dAzo91SePYMOVEWsK5aUnXsTqUOzyfAcswRn6HLgLh2BDK3y3X1kLUUJReflEIHF2VGGRNNxL8fgvtlebJOgS4WGv6WxEqozIBRzTJp3LueMRIvlhTG7dtekO7rc7toAHTWnSdAEHF3o9oh2EqeZBcSwRE7WFgdJ9nwEoCg726vSbGXbtFRdyJuOUcXWhnX2ET9t0kiUJ"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $('make a request to ig').item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1328,
+        -400
+      ],
+      "id": "241948c1-4e2a-4647-8f2b-e96ebc9e2d4e",
+      "name": "post request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Move file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Move file": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "upload in cloud",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload in cloud": {
+      "main": [
+        [
+          {
+            "node": "caption generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "make a request to ig": {
+      "main": [
+        [
+          {
+            "node": "status code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "caption generation": {
+      "main": [
+        [
+          {
+            "node": "make a request to ig",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "post request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait 40 sec",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 40 sec": {
+      "main": [
+        [
+          {
+            "node": "status code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "status code": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "afa3dcc1-e61f-4483-bbeb-5121dc0fe6ee",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ea1bdec5e5a606409d38eb45477e84ac9dadd27e6ed21bbd8aacdb8f3a4ecef7"
+  },
+  "id": "B95gwaB7w07YlNcF",
+  "tags": []
+}
